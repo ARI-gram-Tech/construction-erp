@@ -1,0 +1,499 @@
+I'm glad you brought this up because these folders are what separate a **student project** from a **commercial SaaS ERP**. Most of them are intentionally outside the Django app because they become independent services as your system grows.
+
+Let me explain what each should eventually contain.
+
+---
+
+# 1. 📱 mobile/
+
+This is **not** part of the React web frontend.
+
+It is your Android/iOS application (React Native + Expo).
+
+For construction companies, many employees rarely use a laptop.
+
+For example:
+
+- Site Engineers
+- Storekeepers
+- Foremen
+- Safety Officers
+- Drivers
+- Plant Operators
+
+should be able to use only the mobile app.
+
+Example
+
+```
+mobile/
+│
+├── app/
+│     Login
+│     Dashboard
+│     Attendance
+│     Stock Requests
+│     Daily Reports
+│     Equipment
+│
+├── features/
+│     attendance/
+│     inventory/
+│     planning/
+│     quality/
+│
+├── services/
+│     api.ts
+│     auth.ts
+│
+├── offline/
+│     sync.ts
+│     queue.ts
+│
+└── assets/
+```
+
+Imagine a Site Engineer walking around the construction site.
+
+He opens the mobile app.
+
+He can
+
+- take photos
+- approve work
+- request materials
+- update activity progress
+- sign inspections
+
+without ever touching a laptop.
+
+---
+
+# 2. 📂 storage/
+
+Right now Django stores uploaded files.
+
+Later this folder becomes the logical organization of documents.
+
+Example
+
+```
+storage/
+
+company_documents/
+
+    Licenses
+    KRA
+    NCA
+    Contracts
+
+project_documents/
+
+    BOQs
+    Contracts
+    Specifications
+
+drawings/
+
+    Architectural
+    Structural
+    MEP
+
+reports/
+
+    Daily Reports
+    Weekly Reports
+    Monthly Reports
+
+images/
+
+    Site Photos
+    Inspection Photos
+    Progress Photos
+```
+
+Later this could move to
+
+- AWS S3
+- Azure Blob
+- Cloudinary
+- Google Cloud Storage
+
+without changing your application logic much.
+
+---
+
+# 3. 📚 docs/
+
+This isn't for users.
+
+It's for developers and your business.
+
+Example
+
+```
+docs/
+
+api/
+
+    Authentication
+    Inventory API
+    Projects API
+
+system-design/
+
+    Architecture
+
+    Database diagrams
+
+    ER diagrams
+
+    Deployment
+
+business/
+
+    Pricing
+
+    Modules
+
+    Roadmap
+
+    Requirements
+```
+
+If you hire another developer, they should understand the project from this folder.
+
+---
+
+# 4. 🗄 database/
+
+Not your Django models.
+
+This is database administration.
+
+```
+database/
+
+backups/
+
+daily.sql
+
+weekly.sql
+
+monthly.sql
+
+seeds/
+
+sample companies
+
+sample users
+
+demo data
+
+migrations/
+
+custom sql
+
+performance scripts
+```
+
+If a customer loses data,
+
+you restore it from
+
+```
+database/backups/
+```
+
+---
+
+# 5. 🤖 ai-services/
+
+This is the folder I think will become your biggest competitive advantage.
+
+Instead of putting AI inside Django,
+
+you create separate microservices.
+
+---
+
+## assistant/
+
+Think of this as ChatGPT for construction.
+
+Eventually users can ask
+
+> How much cement has Project A used?
+
+> Which suppliers delayed delivery?
+
+> Which workers are absent today?
+
+> Generate a weekly report.
+
+> Explain why Project B is behind schedule.
+
+The assistant queries your ERP and returns answers.
+
+---
+
+Example
+
+```
+assistant/
+
+chat.py
+
+llm.py
+
+memory.py
+
+prompts.py
+
+tools.py
+```
+
+---
+
+## document_reader/
+
+Construction companies upload
+
+- PDFs
+
+- Drawings
+
+- Contracts
+
+- BOQs
+
+- Specifications
+
+Instead of opening 200-page documents,
+
+the AI reads them.
+
+Example
+
+User asks
+
+> What is the concrete strength required for the foundation?
+
+AI searches the uploaded specification.
+
+Returns
+
+> Section 5.2 requires C30 concrete.
+
+Another example
+
+> When does this contract expire?
+
+AI reads the contract.
+
+---
+
+Example
+
+```
+document_reader/
+
+pdf_reader.py
+
+ocr.py
+
+embeddings.py
+
+indexer.py
+```
+
+---
+
+## search_engine/
+
+This is not Google Search.
+
+It's internal search.
+
+Imagine searching
+
+```
+cement
+```
+
+Results
+
+```
+Inventory
+
+Purchase Orders
+
+BOQ
+
+Invoices
+
+Activities
+
+Drawings
+
+Daily Reports
+
+Photos
+
+Suppliers
+```
+
+Or searching
+
+```
+Tower B
+```
+
+Returns
+
+- Activities
+
+- RFIs
+
+- Drawings
+
+- Documents
+
+- Issues
+
+Everything related to Tower B.
+
+---
+
+# What I would also add in the future
+
+As CONSTRACTOR grows, I'd expand your project structure with additional service folders.
+
+```
+Construction-ERP-SaaS/
+
+backend/
+
+frontend/
+
+mobile/
+
+storage/
+
+docs/
+
+database/
+
+ai-services/
+
+integrations/
+
+workers/
+
+notifications/
+
+analytics/
+
+monitoring/
+
+deployment/
+```
+
+### integrations/
+
+Everything external lives here.
+
+```
+mpesa/
+
+email/
+
+sms/
+
+whatsapp/
+
+google_drive/
+
+onedrive/
+
+quickbooks/
+
+```
+
+### workers/
+
+Background jobs.
+
+```
+Generate reports
+
+Send reminders
+
+Create backups
+
+Export PDFs
+
+Import Excel
+
+Send emails
+```
+
+### notifications/
+
+Central notification engine.
+
+```
+Email
+
+SMS
+
+Push Notifications
+
+In-app Notifications
+
+WhatsApp
+```
+
+### analytics/
+
+Business intelligence.
+
+```
+Project KPIs
+
+Profitability
+
+Cash Flow
+
+Forecasts
+
+Equipment Utilization
+
+Productivity
+```
+
+### monitoring/
+
+Production monitoring.
+
+```
+Logs
+
+Health Checks
+
+Performance
+
+Error Tracking
+
+Audit Trails
+```
+
+---
+
+## Looking ahead
+
+When we first planned CONSTRACTOR, the goal wasn't just to build another CRUD application. The vision was to build something closer to **Procore + Primavera P6 + Microsoft Project + ERPNext + AI Assistant**, tailored for African construction companies.
+
+Your Django backend and React frontend are only one part of that architecture. The `mobile`, `ai-services`, `storage`, `database`, and `docs` directories are there because a serious SaaS platform eventually grows beyond a single web application.
+
+Based on what you've built so far, you've already completed the hardest foundation: authentication, multi-company support, inventory, procurement, planning, and core project management. The next major leap is to turn CONSTRACTOR into an intelligent platform by adding role-based experiences, a mobile field app with offline sync, AI-powered document understanding, and integrated analytics. Those capabilities are what will make it feel like an enterprise product rather than just another management system.

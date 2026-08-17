@@ -1,0 +1,71 @@
+now a project starts, S.E tells his people we will dimolish this wall, what and ill have the following send to you, he goes make an internal order to the office or warehouse main one, that if what he is looking for is not in his site inventory, if its there the site store keeper issue it to him to use it, now liggally if another site store has it and they are not using they inter share but for records it does this site x has and dont use transfar with document to prove that site y made an internal order for tindo, scraper and drilling machine and i gave them out and this is my delivery not now in site x they see this in this delivery note we we have there is this part we see our refrence order no and this are the items we got from this and that site and it was authorised by .... data .. who deliverd and who recieved, what they can not actually see is , i ordered 9 of them and got 5 or 13 becouse they mostly have no time to go through papers as long as it came then its ok,
+
+now that was internal order per site which even site and ware house is almost the same,
+
+now S.E (site engineer) when item is not in site store nor other site they do this,
+send the request via whats app to the main ware house and this is what haapens, store keeper for main warehouse looks do i have it no i dont, now he or she makes an internal order to the office i need blue crown paint that was requested from this and that site, mostly they do it varbaly but in reality they should make an order this is my thinking not sure, its like saying hi procument depertment in our main warehouse we need paint this its not there and its needed by site this and that . end there, now the real humans in the world does this like Bharti the procument we have in this our office says , not to any one but you could hear her shout no, this are so many are sure they will accept, she verbaly ask the pm or qs whad you want this paint for , qs says its for floor no 1 we are painting the wall, and she says ok let me first check with Dipesh then ill let you know the boss/ director now, then she says Dipesh said we pouse on that first till we are paid, or he said we can only but 60 out of that 100, let me write an lpo to crown since we have an account there , now crown guys get the lpo and approves then sends the paints with a delivery not to the company they know nothing of the project they only know we are brining it to this company, they bring it with a delivery note from their company, this delivery note has , items and qty, rates LPO no reference then they receive it at times Bharti can tell the crown guys just have those items go to site : what of the delivery note? they ask she says worry less it will be received there and they will just send it to the office via our driver,
+
+back in the office it was received in the main warehouse this is what will happen the store keeper loads them to the store, since thay have no system its just checked count and in, then makes a delivery note of it to site,
+
+now this is another part for later, the procument will collect all the delivery note for crown hand them over to the accountant for Jilna the accountant to create an invoice then the invoice it also shared to the QS Zena to create the valuation;
+
+if you do not understand that then i dont know how i can help anymore
+
+I understand it — and it's a genuinely useful scenario because it shows how much of this runs on trust, verbal judgment calls, and paper that nobody double-checks, not a clean digital chain. Let me reflect it back to you precisely, so you can correct anything I've got wrong before we touch a single line of code.
+
+## What you just described, in order
+
+**1. Site-to-site internal transfer (the "almost the same as warehouse" case)**
+Site X's engineer needs a tindo, scraper, drilling machine. Site Y has them idle. Site Y's storekeeper hands them over with a delivery note — reference number, items, who authorized it, who delivered, who received. But the actual verification is weak: if the note says "9 units" and only 5 or 13 actually arrive, nobody's counting against the paper in real time. The document exists for accountability _after the fact_, not as a live check. Trust, not verification, is what's actually running that handoff.
+
+**2. Site → Main Warehouse, when nothing's on any site**
+This starts informally — WhatsApp, not a system. Main warehouse storekeeper checks their own stock, doesn't have it either, and _verbally_ escalates to procurement. You said it yourself: "in reality they should make an order, this is my thinking, not sure" — meaning even you know the real-world process is looser than what "should" happen on paper. This is important — it tells me the digital system can't assume every step is formally logged, because it isn't today.
+
+**3. Procurement is a judgment layer, not a rubber stamp**
+Bharti doesn't just buy what's asked. She asks _why_ ("what's this paint for?"), checks with Dipesh (a second internal check — availability/priority), and ultimately the answer comes from the Director on money grounds — "pause until we're paid" or "only buy 60 of the 100." That's a **real approval chain with real partial-approval outcomes**, driven by cash position, not by budget lines in a spreadsheet. This is your Finance/cash-position gate (item #13 on the earlier list) — confirmed as a real, lived thing, not a hypothetical.
+
+**4. The LPO and the supplier relationship**
+Once approved, an LPO goes to Crown. Crown doesn't know or care about "Lake Vitoria Project" — they only know they're delivering to _the company_. Their delivery note carries their own reference (items, qty, rates, LPO number) — not yours. That's a crucial detail: **the supplier's paperwork and your internal project tracking are two separate document trails that only connect through the LPO reference number.**
+
+**5. Delivery can skip the warehouse entirely**
+Bharti can tell Crown "just take it straight to site" — bypassing the office. The delivery note _should_ still route back to the office (via the company driver) so it gets reconciled, but the physical goods and the paperwork can literally travel different paths and arrive at different times. That's a real desync risk baked into how it works today.
+
+**6. Receiving at Main Warehouse is trust-based, not systemized**
+"Checked count and in" — no cross-referencing against the original LPO quantity at the point of receiving. Whatever arrives is treated as correct. Then the storekeeper writes _a new_ delivery note to send it onward to site — so now there are potentially three separate documents in play for one paint order: Crown's delivery note, the warehouse's internal receipt, and the warehouse-to-site delivery note.
+
+**7. Downstream — billing and valuation**
+Later, procurement batches up all of Crown's delivery notes and hands them to Jilna (accountant), who turns them into an invoice. That invoice then goes to Zena (QS), who uses it to build the valuation. You flagged this as "for later" — noted, not building it now, but it confirms the eventual endpoint: **everything that happened on the ground eventually has to reconcile into the QS's valuation and the accountant's invoice.**
+
+---
+
+## What this tells me about how to build the rest
+
+The honest takeaway: **your real operation has more informal, verbal, judgment-based steps than any of what we've built so far assumes.** If I design the digital system to require every step be perfectly logged before the next can happen, it won't match how Bharti, Dipesh, and your storekeepers actually work — and people will just route around it, same as they'd route around a broken process on paper.
+
+So the system probably needs to support **"approved with an amount less than requested"** (Dipesh saying 60 of 100), **"received without exact verification"** (storekeeper's count-and-in), and **"delivered before the paperwork catches up"** (Bharti's "just send it to site") — not fight against those realities, but make them visible and traceable _after the fact_, the same way your paper trail does today, just harder to lose and easier to search.
+
+Before I propose anything to build, tell me — did I get this right, or is there a part I'm still missing or misreading?
+
+Good — now let's map this onto what we actually have (and don't have) in the system, so you can see exactly where the gaps are before we pick what to build.
+
+## What already exists that fits this scenario
+
+- **Site-to-site transfer** → `StockMovement.transfer()` already does exactly this: moves stock between two warehouses, creates a linked out/in pair, records who performed it. The "9 requested, 5 arrived" discrepancy — that's real, and right now the system has no way to flag it, since `transfer()` just trusts the quantity typed in. No built-in "expected vs received" check.
+- **Main warehouse doesn't have it → escalate to procurement** → this is exactly the Purchase Request path (`generate_purchase_request` in Planning → `apps.procurement`), though right now it only triggers from an `ActivityMaterial`, not from a storekeeper's own "I don't have this" moment.
+- **Procurement's judgment layer (Bharti asking "why", checking with Dipesh, Director capping the quantity)** → doesn't exist at all yet. `apps.procurement`'s approval chain is unaudited (item #10 on the pending list) and, even once audited, we've never designed _partial approval_ ("approved for 60 of 100") anywhere in the system.
+- **LPO → supplier delivery note, disconnected from your internal project reference** → `StockMovement.reference` is a free-text field, so an LPO number _can_ be typed in there, but there's no structured `PurchaseOrder` model tying an LPO to specific suppliers, quoted rates, or expected delivery — that's item #11 (supplier quote-sourcing) territory, undesigned.
+- **Delivery straight to site, bypassing the warehouse** → `receive()` already lets you receive stock directly into _any_ warehouse, including a project store — so technically the mechanism exists. What's missing is the LPO/PR linkage so that receipt is provably tied back to what was actually ordered and approved.
+- **Trust-based receiving ("checked count and in")** → this is genuinely how `receive()` works today too — nobody's forcing a match against an expected quantity. That's actually consistent with your real process, so arguably _not_ a bug to fix, just something to be aware of.
+- **Warehouse-to-site delivery note as a second document** → this is just another `transfer()` call, already supported.
+
+## The real gap this scenario exposes
+
+The single biggest missing piece is: **there's no structured `PurchaseOrder`/LPO object connecting "what was requested" → "what was approved (maybe partially)" → "what a supplier delivered" → "what was received."** Right now those are all separate, loosely-connected actions (`ActivityMaterial`, `PurchaseRequest` in procurement, `StockMovement.receipt`) with only a free-text `reference` field holding them together — exactly like your paper world, where the LPO number is the only thread linking three separate pieces of paper.
+
+Given everything, here's my honest read of what would give you the most real-world value next, in order:
+
+1. **Audit `apps.procurement` permissions** (item #10) — needed before anything else, since right now I don't even know who's allowed to approve/reject a PR.
+2. **Design the partial-approval + "why" flow** (Bharti/Dipesh/Director judgment layer) — this is the piece that's completely undesigned and clearly matters most to how your team actually works.
+3. **A real `PurchaseOrder`/LPO model** connecting request → approval → supplier delivery → receipt, so the three-document trail becomes one traceable chain instead of three disconnected free-text references.
+
+Want me to start with #1 (share the procurement app files so I can see what's actually there), or do you want to talk through #2's design on paper first, the same way we just did for this scenario?

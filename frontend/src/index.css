@@ -1,0 +1,152 @@
+/* frontend/src/index.css */
+@import "tailwindcss";
+
+/*
+  Construction ERP SaaS — Orange Accent Theme
+  Modern Industrial Enterprise with warm orange highlights
+*/
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Primary — Deep Navy (base) */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+
+  /* Secondary — Steel Gray */
+  --color-steel-50: #f8fafc;
+  --color-steel-100: #f1f5f9;
+  --color-steel-200: #e2e8f0;
+  --color-steel-300: #cbd5e1;
+  --color-steel-400: #94a3b8;
+  --color-steel-500: #64748b;
+  --color-steel-600: #475569;
+  --color-steel-700: #334155;
+  --color-steel-800: #1e293b;
+  --color-steel-900: #0f172a;
+
+  /* Accent — Orange (warm, energetic, safety) */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+
+  /* Legacy accent mapping for compatibility */
+  --color-accent-50: var(--color-orange-50);
+  --color-accent-100: var(--color-orange-100);
+  --color-accent-200: var(--color-orange-200);
+  --color-accent-300: var(--color-orange-300);
+  --color-accent-400: var(--color-orange-400);
+  --color-accent-500: var(--color-orange-500);
+  --color-accent-600: var(--color-orange-600);
+  --color-accent-700: var(--color-orange-700);
+
+  /* Status */
+  --color-status-success: #22c55e;
+  --color-status-success-bg: #f0fdf4;
+  --color-status-warning: #eab308;
+  --color-status-warning-bg: #fefce8;
+  --color-status-critical: #ef4444;
+  --color-status-critical-bg: #fef2f2;
+}
+
+/* Base Styles */
+body {
+  font-family: var(--font-sans);
+  @apply bg-steel-50 text-steel-900 antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-steel-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-steel-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-steel-400;
+}
+
+/* Focus Ring - Orange */
+*:focus-visible {
+  @apply outline-none ring-2 ring-orange-500/50 ring-offset-2 ring-offset-white;
+}
+
+/* Selection Color */
+::selection {
+  @apply bg-orange-500/20 text-orange-900;
+}
+
+/* Animation Utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom-4 {
+  from {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-top-2 {
+  from {
+    transform: translateY(-0.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-duration: 0.2s;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom-4;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top-2;
+}
+
+/* Gradient Text Utility */
+.text-gradient {
+  @apply bg-linear-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent;
+}

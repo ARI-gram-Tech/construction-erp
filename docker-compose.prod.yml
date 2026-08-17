@@ -1,0 +1,10 @@
+# Production compose file — built out in full during Phase 18 (Deployment).
+# Placeholder for now so the file exists per the folder structure blueprint;
+# do not use this for a real deployment yet.
+services:
+  backend:
+    build: ./backend
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped

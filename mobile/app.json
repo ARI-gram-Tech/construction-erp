@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Construction ERP",
+    "slug": "construction-erp-mobile",
+    "scheme": "constructionerp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-camera", "expo-location"],
+    "ios": { "supportsTablet": true },
+    "android": {},
+    "extra": {
+      "router": { "origin": false }
+    }
+  }
+}

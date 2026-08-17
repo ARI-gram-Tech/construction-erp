@@ -1,0 +1,37 @@
+# --- Environment ---
+.env
+.env.local
+*.env
+
+# --- Backend (Python/Django) ---
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/media/
+backend/staticfiles/
+backend/db.sqlite3
+*.log
+
+# --- Frontend (Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- Mobile (Expo) ---
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+
+# --- Database ---
+database/backups/*
+!database/backups/.gitkeep
+
+# --- Storage (uploaded files, never commit real files) ---
+storage/**/*
+!storage/**/.gitkeep
+
+# --- OS / Editor ---
+.DS_Store
+.vscode/
+.idea/
