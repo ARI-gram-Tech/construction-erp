@@ -39,20 +39,10 @@ class CashFlowPlanViewSet(ProjectScopedMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def summary(self, request, project_pk=None, pk=None):
         """
-        GET .../plans/{id}/summary/?group_by=wbs|activity
-        Returns period-by-period totals — the actual chart/grid data.
-        Shape:
-          {
-            "periods": ["2026-01-01", "2026-02-01", ...],
-            "rows": [
-              {"key": "wbs-3", "label": "Concrete Works", "type": "wbs",
-               "totals": {"2026-01-01": 120000, ...},
-               "children": [
-                 {"key": "activity-14", "label": "Cast Slab", "type": "activity",
-                  "totals": {"2026-01-01": 120000, ...}}
-               ]}
-            ]
-          }
+        GET .../plans/{id}/summary/?group_by=wbs|activity&entry_type=planned
+        Now includes a per-activity category breakdown alongside the
+        totals, so the frontend can render editable category rows
+        under each activity without a second request.
         """
         plan = self.get_object()
         entry_type = request.query_params.get('entry_type', 'planned')
@@ -69,25 +59,36 @@ class CashFlowPlanViewSet(ProjectScopedMixin, viewsets.ModelViewSet):
         for e in entries:
             activity = e.activity
             wbs = activity.wbs
-            if wbs:
-                group = wbs_groups.setdefault(wbs.id, {
-                    'key': f'wbs-{wbs.id}', 'label': wbs.name, 'type': 'wbs',
-                    'totals': {}, 'children': {},
-                })
-            else:
-                group = unassigned
+            group = wbs_groups.setdefault(wbs.id, {
+                'key': f'wbs-{wbs.id}', 'label': wbs.name, 'type': 'wbs',
+                'totals': {}, 'children': {},
+            }) if wbs else unassigned
 
-            group['totals'][str(e.period_start)] = group['totals'].get(str(e.period_start), 0) + float(e.amount)
+            period_key = str(e.period_start)
+            group['totals'][period_key] = group['totals'].get(period_key, 0) + float(e.amount)
 
             child = group['children'].setdefault(activity.id, {
                 'key': f'activity-{activity.id}', 'label': activity.name, 'type': 'activity',
-                'totals': {},
+                'activity_id': activity.id,
+                'planned_start': str(activity.planned_start),
+                'planned_end': str(activity.planned_end),
+                'totals': {}, 'categories': {},
             })
-            child['totals'][str(e.period_start)] = child['totals'].get(str(e.period_start), 0) + float(e.amount)
+            child['totals'][period_key] = child['totals'].get(period_key, 0) + float(e.amount)
+
+            cat = child['categories'].setdefault(e.category, {
+                'key': f'activity-{activity.id}-{e.category}',
+                'category': e.category,
+                'cells': {},
+            })
+            cat['cells'][period_key] = {'entry_id': e.id, 'amount': float(e.amount)}
 
         rows = []
         for group in list(wbs_groups.values()) + ([unassigned] if unassigned['totals'] else []):
-            group['children'] = list(group['children'].values())
+            group['children'] = [
+                {**child, 'categories': list(child['categories'].values())}
+                for child in group['children'].values()
+            ]
             rows.append(group)
 
         return Response({

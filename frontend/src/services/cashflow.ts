@@ -85,3 +85,21 @@ export async function distributeCashFlow(
   );
   return data;
 }
+
+export async function createCashFlowEntry(
+  projectId: number,
+  planId: number,
+  payload: {
+    activity: number;
+    category: string;
+    entry_type: CashFlowEntryType;
+    period_start: string;
+    amount: number;
+  },
+): Promise<CashFlowEntry> {
+  const { data } = await api.post(
+    `${base(projectId)}/plans/${planId}/entries/`,
+    payload,
+  );
+  return data;
+}

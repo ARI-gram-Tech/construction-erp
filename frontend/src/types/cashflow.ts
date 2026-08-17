@@ -39,19 +39,6 @@ export interface CashFlowEntry {
   notes: string;
 }
 
-export interface CashFlowSummaryRow {
-  key: string;
-  label: string;
-  type: "wbs" | "activity";
-  totals: Record<string, number>;
-  children?: CashFlowSummaryRow[];
-}
-
-export interface CashFlowSummary {
-  periods: string[];
-  rows: CashFlowSummaryRow[];
-}
-
 export interface CreateCashFlowPlanPayload {
   title: string;
   period_type: CashFlowPeriodType;
@@ -63,4 +50,39 @@ export interface DistributePayload {
   category: CashFlowCategory;
   entry_type: CashFlowEntryType;
   total_amount: number;
+}
+
+export interface CashFlowCell {
+  entry_id: number;
+  amount: number;
+}
+
+export interface CashFlowCategoryRow {
+  key: string;
+  category: CashFlowCategory;
+  cells: Record<string, CashFlowCell>;
+}
+
+export interface CashFlowActivityRow {
+  key: string;
+  label: string;
+  type: "activity";
+  activity_id: number;
+  planned_start: string;
+  planned_end: string;
+  totals: Record<string, number>;
+  categories: CashFlowCategoryRow[];
+}
+
+export interface CashFlowWBSGroup {
+  key: string;
+  label: string;
+  type: "wbs";
+  totals: Record<string, number>;
+  children: CashFlowActivityRow[];
+}
+
+export interface CashFlowSummary {
+  periods: string[];
+  rows: CashFlowWBSGroup[];
 }
