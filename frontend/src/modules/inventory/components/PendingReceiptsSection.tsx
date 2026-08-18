@@ -30,12 +30,34 @@ export function PendingReceiptsSection({
   warehouseId,
   onSuccess,
 }: PendingReceiptsSectionProps) {
+  // Both statuses can have a dispatched leg awaiting receipt at this
+  // store: a fully-dispatched request ('in_transit'), or the dispatched
+  // portion of a partial one ('partially_dispatched') — the shortfall
+  // on the latter is a separate concern handled via escalation, not
+  // something that blocks receiving what WAS sent.
   const {
-    data: restockRequests,
-    loading: rrLoading,
-    error: rrError,
-    reload: reloadRestock,
+    data: inTransit,
+    loading: rr1Loading,
+    error: rr1Error,
+    reload: reloadInTransit,
   } = useFetch(() => listRestockRequests("in_transit"));
+  const {
+    data: partiallyDispatched,
+    loading: rr2Loading,
+    error: rr2Error,
+    reload: reloadPartial,
+  } = useFetch(() => listRestockRequests("partially_dispatched"));
+
+  const restockRequests = [
+    ...(inTransit ?? []),
+    ...(partiallyDispatched ?? []),
+  ];
+  const rrLoading = rr1Loading || rr2Loading;
+  const rrError = rr1Error || rr2Error;
+  function reloadRestock() {
+    reloadInTransit();
+    reloadPartial();
+  }
 
   const {
     data: purchaseRequests,

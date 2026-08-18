@@ -1,8 +1,12 @@
 // frontend/src/modules/procurement/components/CompanyProcurementTabs.tsx
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Truck } from "lucide-react";
+import { LayoutDashboard, ClipboardList, FileText, Truck } from "lucide-react";
 
-export type CompanyProcurementTab = "dashboard" | "requests" | "suppliers";
+export type CompanyProcurementTab =
+  | "dashboard"
+  | "requests"
+  | "lpos"
+  | "suppliers";
 
 interface NavItem {
   key: CompanyProcurementTab;
@@ -19,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
     path: "requests",
     icon: ClipboardList,
   },
+  { key: "lpos", label: "LPOs", path: "lpos", icon: FileText },
   { key: "suppliers", label: "Suppliers", path: "suppliers", icon: Truck },
 ];
 
@@ -29,6 +34,7 @@ export function CompanyProcurementTabs() {
   const getActiveTab = (): CompanyProcurementTab => {
     const path = location.pathname;
     if (path.includes("/company/procurement/requests")) return "requests";
+    if (path.includes("/company/procurement/lpos")) return "lpos";
     if (path.includes("/company/procurement/suppliers")) return "suppliers";
     return "dashboard";
   };

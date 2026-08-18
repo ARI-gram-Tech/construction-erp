@@ -33,8 +33,8 @@ import { ProcurementPage } from "@/modules/projects/ProjectProcurement/Procureme
 import { CompanyProcurementLayout } from "@/modules/procurement/components/CompanyProcurementLayout";
 import { CompanyProcurementDashboard } from "@/modules/procurement/CompanyProcurementDashboard";
 import { CompanyPurchaseRequestsPage } from "@/modules/procurement/CompanyPurchaseRequestsPage";
-import { BudgetWorkspacePage } from "@/modules/projects/ProjectBudget/BudgetWorkspacePage";
-import { CashFlowWorkspacePage } from "@/modules/projects/ProjectCashFlow/CashFlowWorkspacePage";
+import { CompanyLPOsPage } from "@/modules/procurement/CompanyLPOsPage";
+import { CostControlWorkspacePage } from "@/modules/projects/ProjectCostControl/CostControlWorkspacePage";
 import { VariationsPage } from "@/modules/projects/ProjectVariations/VariationsPage";
 import { IPCListPage } from "@/modules/projects/ProjectVariations/IPCListPage";
 import { RoleGate } from "@/components/RoleGate";
@@ -196,6 +196,7 @@ export default function App() {
                 path="requests"
                 element={<CompanyPurchaseRequestsPage />}
               />
+              <Route path="lpos" element={<CompanyLPOsPage />} />
               <Route path="suppliers" element={<SuppliersPage />} />
             </Route>
             <Route
@@ -255,12 +256,8 @@ export default function App() {
               element={<BOQImportPage />}
             />
             <Route
-              path="/projects/:projectId/budget"
-              element={<BudgetWorkspacePage />}
-            />
-            <Route
-              path="/projects/:projectId/cashflow"
-              element={<CashFlowWorkspacePage />}
+              path="/projects/:projectId/cost-control"
+              element={<CostControlWorkspacePage />}
             />
             <Route
               path="/projects/:projectId/variations"

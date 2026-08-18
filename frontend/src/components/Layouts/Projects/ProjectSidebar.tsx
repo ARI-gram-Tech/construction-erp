@@ -13,6 +13,7 @@ import {
   Wallet,
   BarChart3,
   GitPullRequest,
+  Coins,
 } from "lucide-react";
 
 import {
@@ -53,9 +54,9 @@ function nav(projectId: string): ProjectNavItem[] {
       roles: QS_INVOLVED_ROLES,
     },
     {
-      to: `${base}/budget`,
-      label: "Budget",
-      icon: Wallet,
+      to: `${base}/cost-control`,
+      label: "Cost Control",
+      icon: Coins,
       roles: QS_INVOLVED_ROLES,
     },
     {

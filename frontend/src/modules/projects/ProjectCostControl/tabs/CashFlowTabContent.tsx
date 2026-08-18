@@ -1,4 +1,4 @@
-// /src/modules/projects/ProjectCashFlow/CashFlowWorkspacePage.tsx
+// /src/modules/projects/ProjectCostControl/tabs/CashFlowTabContent.tsx
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useFetch } from "@/hooks/useFetch";
@@ -10,7 +10,8 @@ import {
 } from "@/services/cashflow";
 import { listBudgets } from "@/services/budget";
 import type { CashFlowPeriodType, CashFlowEntryType } from "@/types/cashflow";
-import { CashFlowGrid } from "./components/CashFlowGrid";
+import { CashFlowGrid } from "@/modules/projects/ProjectCashFlow/components/CashFlowGrid";
+import { CostControlHeader } from "../components/CostControlHeader";
 import {
   TrendingUp,
   Plus,
@@ -25,7 +26,7 @@ const PERIOD_LABELS: Record<CashFlowPeriodType, string> = {
   year: "Yearly",
 };
 
-export function CashFlowWorkspacePage() {
+export function CashFlowTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const pid = Number(projectId);
 
@@ -127,14 +128,10 @@ export function CashFlowWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-steel-200/60 shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-steel-900 flex items-center gap-3">
-            <div className="p-2 bg-orange-50 rounded-xl border border-orange-200/50">
-              <TrendingUp size={24} className="text-orange-500" />
-            </div>
-            Cash Flow
-          </h1>
+      <CostControlHeader
+        title="Cash Flow"
+        icon={TrendingUp}
+        actions={
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors"
@@ -142,8 +139,8 @@ export function CashFlowWorkspacePage() {
             <Plus size={16} />
             New Plan
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {actionError && (
         <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg flex items-center gap-2">

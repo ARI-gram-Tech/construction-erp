@@ -12,6 +12,9 @@ Approval logic:
            Judges spend authorization.
   company_admin may act at either tier as an override.
 """
+import json as _json
+from decimal import Decimal, InvalidOperation
+
 from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.shortcuts import get_object_or_404
@@ -24,7 +27,7 @@ from rest_framework.response import Response
 from apps.suppliers.models import Supplier
 from apps.projects.models import Project
 from apps.notifications.utils import notify
-from .models import PurchaseRequest, LPO, LPOItem
+from .models import PurchaseRequest, LPO, LPOItem, SupplierItem
 from .permissions import PurchaseRequestPermission, LPOPermission, can_sign_lpo, can_send_lpo
 from .serializers import (
     PurchaseRequestSerializer,
@@ -35,6 +38,29 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+
+def _record_supplier_items(supplier, descriptions):
+    """
+    Upserts SupplierItem rows for `supplier` given a list of item
+    description strings — called after every LPO's items are created,
+    from both generate() and manual(), so supplier history builds
+    itself automatically regardless of which path created the LPO.
+    """
+    now = timezone.now()
+    for description in descriptions:
+        description = (description or '').strip()
+        if not description:
+            continue
+        key = description.lower()
+        obj, created = SupplierItem.objects.get_or_create(
+            supplier=supplier, description_key=key,
+            defaults={'description': description, 'times_ordered': 1, 'last_ordered_at': now},
+        )
+        if not created:
+            obj.times_ordered = models.F('times_ordered') + 1
+            obj.last_ordered_at = now
+            obj.save(update_fields=['times_ordered', 'last_ordered_at'])
 
 
 def _notify_role(company, role, title, message, level, link):
@@ -561,7 +587,9 @@ class LPOViewSet(viewsets.ModelViewSet):
 
         lpo = LPO.objects.create(
             purchase_request=pr,
+            project=pr.project,
             supplier=supplier,
+            origin='generated',
             company_name=company.name,
             company_address=company.address,
             company_po_box='',  # Company has no P.O. Box field yet — left blank, editable on the LPO if needed later
@@ -586,8 +614,120 @@ class LPOViewSet(viewsets.ModelViewSet):
             )
             for item in pr.items.all()
         ])
+        _record_supplier_items(supplier, [item.description for item in pr.items.all()])
         return Response(LPOSerializer(lpo, context={'request': request}).data, status=201)
 
+    @action(detail=False, methods=['post'], url_path='manual')
+    def manual(self, request):
+        """
+        Body (multipart or JSON):
+          supplier            required — supplier id
+          project              required — which project this LPO is for
+          items                required — JSON list: [{description, quantity, unit, rate}, ...]
+          vat_applicable       optional, default true
+          vat_percent          optional, default 16
+          purchase_request     optional — link to an existing PR this LPO fulfils
+                                (e.g. one escalated from a restock shortfall)
+          source_document      optional file — the handwritten/external LPO image or PDF
+          already_signed       optional bool — defaults to true if source_document is
+                                given (a handwritten LPO already carries a real signature,
+                                or an externally-issued one is already valid), false
+                                otherwise. When true, status is set straight to 'signed',
+                                skipping approve_digital/upload_signed entirely.
+
+        Procurement is trusted to record this directly — no PurchaseRequest
+        approval chain required, matching how generate() only requires an
+        approved PR rather than re-approving anything itself.
+        """
+        supplier = get_object_or_404(
+            Supplier, pk=request.data.get('supplier'), company=request.user.company,
+        )
+        project = get_object_or_404(
+            Project, pk=request.data.get('project'), company=request.user.company,
+        )
+
+        pr = None
+        pr_id = request.data.get('purchase_request')
+        if pr_id:
+            pr = get_object_or_404(
+                PurchaseRequest, pk=pr_id, project__company=request.user.company,
+            )
+            if hasattr(pr, 'lpo'):
+                raise ValidationError(f'An LPO ({pr.lpo.code}) already exists for this request.')
+
+        raw_items = request.data.get('items')
+        if isinstance(raw_items, str):
+            try:
+                raw_items = _json.loads(raw_items)
+            except ValueError:
+                raise ValidationError('items must be valid JSON.')
+        if not raw_items:
+            raise ValidationError('At least one item is required.')
+
+        try:
+            parsed_items = [
+                {
+                    'description': row.get('description', ''),
+                    'quantity': Decimal(str(row.get('quantity', 0))),
+                    'unit': row.get('unit', ''),
+                    'rate': Decimal(str(row.get('rate', 0))),
+                }
+                for row in raw_items
+            ]
+        except InvalidOperation:
+            raise ValidationError('Every item needs a numeric quantity and rate.')
+
+        company = project.company
+        vat_applicable = str(request.data.get('vat_applicable', 'true')).lower() != 'false'
+        try:
+            vat_percent = Decimal(str(request.data.get('vat_percent', 16)))
+        except InvalidOperation:
+            raise ValidationError('vat_percent must be a number.')
+
+        subtotal = sum((row['quantity'] * row['rate'] for row in parsed_items), Decimal('0'))
+        vat_amount = (subtotal * vat_percent / 100) if vat_applicable else Decimal('0')
+        total = subtotal + vat_amount
+
+        source_document = request.FILES.get('source_document')
+        already_signed = str(
+            request.data.get('already_signed', 'true' if source_document else 'false')
+        ).lower() != 'false'
+
+        lpo = LPO.objects.create(
+            purchase_request=pr,
+            project=project,
+            supplier=supplier,
+            origin='manual',
+            company_name=company.name,
+            company_address=company.address,
+            company_po_box='',
+            company_phone=company.phone,
+            company_email=company.email,
+            supplier_name=supplier.name,
+            supplier_address=supplier.physical_address,
+            supplier_email=supplier.email,
+            supplier_phone=supplier.phone,
+            vat_applicable=vat_applicable,
+            vat_percent=vat_percent,
+            subtotal=subtotal,
+            vat_amount=vat_amount,
+            total=total,
+            source_document=source_document,
+            signature_mode='wet_ink' if source_document else '',
+            status='signed' if already_signed else 'awaiting_signature',
+            created_by=request.user,
+        )
+        LPOItem.objects.bulk_create([
+            LPOItem(
+                lpo=lpo, description=row['description'],
+                quantity=row['quantity'], unit=row['unit'], rate=row['rate'],
+            )
+            for row in parsed_items
+        ])
+        _record_supplier_items(supplier, [row['description'] for row in parsed_items])
+
+        return Response(LPOSerializer(lpo, context={'request': request}).data, status=201)
+    
     @action(detail=True, methods=['post'], url_path='approve-digital')
     def approve_digital(self, request, pk=None):
         lpo = self.get_object()
@@ -692,3 +832,31 @@ class LPOViewSet(viewsets.ModelViewSet):
         response = HttpResponse(buffer.read(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{lpo.code}.pdf"'
         return response
+
+
+class SupplierItemViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only — GET /api/procurement/supplier-items/?supplier=<id>
+    What a supplier has been ordered for before, most-ordered first.
+    Powers "this supplier usually sells..." suggestions when picking a
+    supplier for a new LPO. Rows are written only via _record_supplier_items(),
+    never through this viewset directly.
+    """
+    from .serializers import SupplierItemSerializer as _SupplierItemSerializer
+    serializer_class = _SupplierItemSerializer
+    permission_classes = [PurchaseRequestPermission]  # any authenticated company user can view
+
+    def get_queryset(self):
+        qs = SupplierItem.objects.filter(supplier__company=self.request.user.company)
+        supplier_id = self.request.query_params.get('supplier')
+        if supplier_id:
+            qs = qs.filter(supplier_id=supplier_id)
+        return qs
+
+    def get_permissions(self):
+        # Override — viewing supplier history is harmless read access,
+        # doesn't need the full PurchaseRequestPermission project-scoping
+        # logic (this viewset has no get_project(), so that class's
+        # has_permission would break here). Simple auth check instead.
+        from rest_framework.permissions import IsAuthenticated
+        return [IsAuthenticated()]

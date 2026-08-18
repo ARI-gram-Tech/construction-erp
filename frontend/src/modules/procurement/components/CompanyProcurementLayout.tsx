@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { CompanyProcurementTabs } from "./CompanyProcurementTabs";
 import { CompanyProcurementHeader } from "./CompanyProcurementHeader";
+import { ManualLPOModal } from "./ManualLPOModal";
 
 export interface ProcurementOutletContext {
   setRequestCount: (count: number | null) => void;
@@ -12,6 +13,7 @@ export interface ProcurementOutletContext {
   setShowFilters: (show: boolean) => void;
   hasActiveFilters: boolean;
   setHasActiveFilters: (active: boolean) => void;
+  reloadSignal: number;
 }
 
 export function CompanyProcurementLayout() {
@@ -19,6 +21,8 @@ export function CompanyProcurementLayout() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [reloadSignal, setReloadSignal] = useState(0);
 
   const context: ProcurementOutletContext = {
     setRequestCount,
@@ -28,6 +32,7 @@ export function CompanyProcurementLayout() {
     setShowFilters,
     hasActiveFilters,
     setHasActiveFilters,
+    reloadSignal,
   };
 
   return (
@@ -43,12 +48,23 @@ export function CompanyProcurementLayout() {
         showFilters={showFilters}
         setShowFilters={setShowFilters}
         hasActiveFilters={hasActiveFilters}
+        onRecordLPO={() => setShowManualModal(true)}
       />
 
       {/* 3. Tab Content */}
       <div>
         <Outlet context={context} />
       </div>
+
+      {showManualModal && (
+        <ManualLPOModal
+          onClose={() => setShowManualModal(false)}
+          onCreated={() => {
+            setShowManualModal(false);
+            setReloadSignal((n) => n + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

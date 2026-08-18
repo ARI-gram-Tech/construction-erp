@@ -1,11 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { useFetch } from "@/hooks/useFetch";
 import { listRestockRequests } from "@/services/inventory";
-import { Truck, Clock, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Truck,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+} from "lucide-react";
 import type { StockRestockRequest } from "@/types/inventory";
 
 const STATUS_STYLES: Record<StockRestockRequest["status"], string> = {
   pending: "bg-amber-50 text-amber-700 border-amber-200",
+  partially_dispatched: "bg-orange-50 text-orange-700 border-orange-200",
   in_transit: "bg-blue-50 text-blue-700 border-blue-200",
   received: "bg-green-50 text-green-700 border-green-200",
   rejected: "bg-red-50 text-red-700 border-red-200",
@@ -13,6 +20,7 @@ const STATUS_STYLES: Record<StockRestockRequest["status"], string> = {
 
 const STATUS_ICONS: Record<StockRestockRequest["status"], React.ElementType> = {
   pending: Clock,
+  partially_dispatched: AlertTriangle,
   in_transit: Truck,
   received: CheckCircle2,
   rejected: XCircle,
@@ -20,6 +28,7 @@ const STATUS_ICONS: Record<StockRestockRequest["status"], React.ElementType> = {
 
 const STATUS_LABELS: Record<StockRestockRequest["status"], string> = {
   pending: "Pending Approval",
+  partially_dispatched: "Partially Dispatched",
   in_transit: "Dispatched — In Transit",
   received: "Received",
   rejected: "Rejected",

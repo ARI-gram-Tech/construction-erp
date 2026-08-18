@@ -220,19 +220,34 @@ class StockMovement(CompanyOwnedModel):
 class StockRestockRequest(CompanyOwnedModel):
     """
     Raised by a storekeeper who's running low on something that already
-    exists in the catalog. Two-step lifecycle, mirroring PurchaseRequest's
-    delivered-vs-received split:
+    exists in the catalog. Lifecycle now has a shortfall branch, not
+    just the simple pending -> in_transit -> received path:
 
       pending -> in_transit (dispatch: stock leaves source, transfer_out
                  movement created) -> received (receipt: stock lands at
                  destination, transfer_in movement created) -> rejected
                  (only reachable from pending)
 
+      pending -> partially_dispatched -- Main Store Manager doesn't have
+                 enough to fully cover quantity_requested. Whatever IS
+                 available gets dispatched now (fulfilled_quantity,
+                 its own transfer_out movement), and the shortfall
+                 (quantity_requested - fulfilled_quantity) can be pushed
+                 straight into Procurement via escalate_to_procurement()
+                 on the view — no retyping the item/quantity, since
+                 generated_purchase_request carries this request's data
+                 forward. The partially-dispatched portion still needs
+                 its own receipt confirmation at the destination store
+                 (received / received_quantity), independent of whether
+                 the shortfall has been escalated yet.
+
     Previously this was a single 'approved' step that moved stock both
-    ways atomically — no gap for "it's on the truck but hasn't arrived."
+    ways atomically — no gap for "it's on the truck but hasn't arrived,"
+    and no way to represent "some went now, the rest is on order."
     """
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('partially_dispatched', 'Partially Dispatched — Shortfall Pending'),
         ('in_transit', 'In Transit'),
         ('received', 'Received'),
         ('rejected', 'Rejected'),
@@ -248,6 +263,20 @@ class StockRestockRequest(CompanyOwnedModel):
         help_text='Must already exist in the catalog — this is not for new items.',
     )
     quantity_requested = models.DecimalField(max_digits=14, decimal_places=2)
+    fulfilled_quantity = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text='What was actually dispatched from source_warehouse. Null until '
+                   'dispatch happens. May be less than quantity_requested if the '
+                   'source warehouse could not fully cover it — the gap is the '
+                   'shortfall that can be escalated to Procurement.',
+    )
+    generated_purchase_request = models.ForeignKey(
+        'procurement.PurchaseRequest', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='source_restock_requests',
+        help_text='Set if the shortfall on this request was escalated to Procurement — '
+                   'the resulting PurchaseRequest, carrying this request\'s item and '
+                   'shortfall quantity forward without re-entry.',
+    )
     source_warehouse = models.ForeignKey(
         Warehouse, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='outgoing_restock_requests',
@@ -262,7 +291,7 @@ class StockRestockRequest(CompanyOwnedModel):
         'accounts.User', on_delete=models.SET_NULL, null=True,
         related_name='restock_requests',
     )
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
 
     # --- Dispatch leg (pending -> in_transit) ---
     dispatched_by = models.ForeignKey(

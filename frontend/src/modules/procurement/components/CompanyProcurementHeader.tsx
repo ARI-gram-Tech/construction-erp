@@ -1,15 +1,19 @@
-// frontend/src/modules/procurement/components/CompanyProcurementHeader.tsx
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ClipboardList,
+  FileText,
   Truck,
   Plus,
   Search,
   Filter,
 } from "lucide-react";
 
-export type CompanyProcurementTab = "dashboard" | "requests" | "suppliers";
+export type CompanyProcurementTab =
+  | "dashboard"
+  | "requests"
+  | "lpos"
+  | "suppliers";
 
 interface CompanyProcurementHeaderProps {
   requestCount: number | null;
@@ -18,6 +22,7 @@ interface CompanyProcurementHeaderProps {
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
   hasActiveFilters: boolean;
+  onRecordLPO?: () => void;
 }
 
 const TITLE_BY_TAB: Record<
@@ -26,6 +31,7 @@ const TITLE_BY_TAB: Record<
 > = {
   dashboard: { label: "Procurement Overview", icon: LayoutDashboard },
   requests: { label: "Purchase Requests", icon: ClipboardList },
+  lpos: { label: "Local Purchase Orders", icon: FileText },
   suppliers: { label: "Suppliers", icon: Truck },
 };
 
@@ -36,6 +42,7 @@ export function CompanyProcurementHeader({
   showFilters,
   setShowFilters,
   hasActiveFilters,
+  onRecordLPO,
 }: CompanyProcurementHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,6 +50,7 @@ export function CompanyProcurementHeader({
   const getActiveTab = (): CompanyProcurementTab => {
     const path = location.pathname;
     if (path.includes("/company/procurement/requests")) return "requests";
+    if (path.includes("/company/procurement/lpos")) return "lpos";
     if (path.includes("/company/procurement/suppliers")) return "suppliers";
     return "dashboard";
   };
@@ -72,6 +80,12 @@ export function CompanyProcurementHeader({
             <p className="text-steel-500 text-sm mt-1.5 ml-12">
               Every purchase request across every project you have visibility
               into.
+            </p>
+          )}
+
+          {activeTab === "lpos" && (
+            <p className="text-steel-500 text-sm mt-1.5 ml-12">
+              Every LPO — generated or manually recorded — across every project.
             </p>
           )}
         </div>
@@ -109,6 +123,16 @@ export function CompanyProcurementHeader({
                 )}
               </button>
             </>
+          )}
+
+          {activeTab === "lpos" && onRecordLPO && (
+            <button
+              onClick={onRecordLPO}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white transition-all duration-200 shadow-sm hover:shadow-md shrink-0"
+            >
+              <Plus size={16} />
+              Record LPO
+            </button>
           )}
 
           {activeTab === "suppliers" && (

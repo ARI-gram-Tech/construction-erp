@@ -182,7 +182,7 @@ class LPOPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        if view.action == 'create':
+        if view.action in ('create', 'manual'):
             return can_generate_lpo(request.user)
         return True  # view access checked at object level
 

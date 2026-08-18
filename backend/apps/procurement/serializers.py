@@ -1,7 +1,7 @@
 # apps/procurement/serializers.py
 from rest_framework import serializers
 
-from .models import PurchaseRequest, PurchaseRequestItem, LPO, LPOItem
+from .models import PurchaseRequest, PurchaseRequestItem, LPO, LPOItem, SupplierItem
 
 
 class PurchaseRequestItemSerializer(serializers.ModelSerializer):
@@ -128,27 +128,33 @@ class LPOItemSerializer(serializers.ModelSerializer):
 
 class LPOSerializer(serializers.ModelSerializer):
     items = LPOItemSerializer(many=True, read_only=True)
-    purchase_request_code = serializers.CharField(source='purchase_request.code', read_only=True)
+    purchase_request_code = serializers.CharField(
+        source='purchase_request.code', read_only=True, default=None
+    )
+    project_name = serializers.CharField(source='project.name', read_only=True)
     digitally_approved_by_name = serializers.CharField(
         source='digitally_approved_by.get_full_name', read_only=True, default=None
     )
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default=None)
     signed_document_url = serializers.SerializerMethodField()
+    source_document_url = serializers.SerializerMethodField()
 
     class Meta:
         model = LPO
         fields = (
-            'id', 'code', 'purchase_request', 'purchase_request_code', 'supplier',
+            'id', 'code', 'origin', 'purchase_request', 'purchase_request_code',
+            'project', 'project_name', 'supplier',
             'company_name', 'company_address', 'company_po_box', 'company_phone', 'company_email',
             'supplier_name', 'supplier_address', 'supplier_email', 'supplier_phone',
             'vat_applicable', 'vat_percent', 'subtotal', 'vat_amount', 'total',
             'status', 'signature_mode', 'signed_document', 'signed_document_url',
+            'source_document', 'source_document_url',
             'digitally_approved_by', 'digitally_approved_by_name', 'digitally_approved_at',
             'delivery_location', 'created_by', 'created_by_name', 'sent_at',
             'items', 'created_at',
         )
         read_only_fields = (
-            'id', 'code', 'purchase_request', 'supplier', 'status',
+            'id', 'code', 'origin', 'purchase_request', 'project', 'supplier', 'status',
             'digitally_approved_by', 'digitally_approved_at', 'created_by', 'sent_at', 'created_at',
         )
 
@@ -158,3 +164,17 @@ class LPOSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         url = obj.signed_document.url
         return request.build_absolute_uri(url) if request else url
+
+    def get_source_document_url(self, obj):
+        if not obj.source_document:
+            return None
+        request = self.context.get('request')
+        url = obj.source_document.url
+        return request.build_absolute_uri(url) if request else url
+
+
+class SupplierItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SupplierItem
+        fields = ('id', 'supplier', 'description', 'times_ordered', 'last_ordered_at')
+        read_only_fields = fields

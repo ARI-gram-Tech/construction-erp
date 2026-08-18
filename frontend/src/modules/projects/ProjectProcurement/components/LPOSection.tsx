@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   Download,
   Building2,
+  ClipboardEdit,
+  Paperclip,
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -20,6 +22,7 @@ import {
 } from "@/services/lpo";
 import type { LPO, LPOStatus, DeliveryLocation } from "@/types/lpo";
 import type { PurchaseRequest } from "@/types/purchaseRequest";
+import { ManualLPOModal } from "@/modules/procurement/components/ManualLPOModal";
 
 interface LPOSectionProps {
   pr: PurchaseRequest;
@@ -64,6 +67,9 @@ export function LPOSection({ pr, lpo, onChange }: LPOSectionProps) {
   const [showSendForm, setShowSendForm] = useState(false);
   const [deliveryLocation, setDeliveryLocation] =
     useState<DeliveryLocation>("");
+
+  // --- Record-manually modal ---
+  const [showManualModal, setShowManualModal] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -115,7 +121,7 @@ export function LPOSection({ pr, lpo, onChange }: LPOSectionProps) {
     setShowSendForm(false);
   }
 
-  // No LPO yet — only show the generate option once the PR is fully approved.
+  // No LPO yet — only show the generate/record options once the PR is fully approved.
   if (!lpo) {
     if (pr.status !== "approved") return null;
     if (!isProcurement) return null;
@@ -127,13 +133,22 @@ export function LPOSection({ pr, lpo, onChange }: LPOSectionProps) {
           Local Purchase Order
         </h2>
         {!showGenerateForm ? (
-          <button
-            onClick={() => setShowGenerateForm(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"
-          >
-            <FileText size={14} />
-            Generate LPO
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowGenerateForm(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+            >
+              <FileText size={14} />
+              Generate LPO
+            </button>
+            <button
+              onClick={() => setShowManualModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg border border-steel-300 text-steel-700 hover:bg-steel-50"
+            >
+              <ClipboardEdit size={14} />
+              Record Existing LPO
+            </button>
+          </div>
         ) : (
           <form onSubmit={handleGenerate} className="space-y-3">
             <div>
@@ -198,6 +213,18 @@ export function LPOSection({ pr, lpo, onChange }: LPOSectionProps) {
             </div>
           </form>
         )}
+
+        {showManualModal && (
+          <ManualLPOModal
+            presetProjectId={pr.project}
+            presetPurchaseRequestId={pr.id}
+            onClose={() => setShowManualModal(false)}
+            onCreated={() => {
+              setShowManualModal(false);
+              onChange();
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -234,15 +261,35 @@ export function LPOSection({ pr, lpo, onChange }: LPOSectionProps) {
         </div>
       </div>
 
-      <a
-        href={getLPOPdfUrl(lpo.id)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700"
-      >
-        <Download size={14} />
-        Download PDF
-      </a>
+      <div className="flex flex-wrap items-center gap-4">
+        {lpo.origin === "generated" ? (
+          <a
+            href={getLPOPdfUrl(lpo.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700"
+          >
+            <Download size={14} />
+            Download PDF
+          </a>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-steel-100 text-steel-600">
+            <ClipboardEdit size={12} />
+            Manually recorded
+          </span>
+        )}
+        {lpo.source_document_url && (
+          <a
+            href={lpo.source_document_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700"
+          >
+            <Paperclip size={14} />
+            View Original Document
+          </a>
+        )}
+      </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 

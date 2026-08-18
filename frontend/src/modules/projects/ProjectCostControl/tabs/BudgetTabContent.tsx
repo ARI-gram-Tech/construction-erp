@@ -1,3 +1,4 @@
+// /src/modules/projects/ProjectCostControl/tabs/BudgetTabContent.tsx
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useFetch } from "@/hooks/useFetch";
@@ -9,7 +10,8 @@ import {
   lockBudget,
 } from "@/services/budget";
 import { listBOQs } from "@/services/boq";
-import { BudgetLinesTable } from "./components/BudgetLinesTable";
+import { BudgetLinesTable } from "@/modules/projects/ProjectBudget/components/BudgetLinesTable";
+import { CostControlHeader } from "../components/CostControlHeader";
 import {
   Wallet,
   Plus,
@@ -25,7 +27,7 @@ const STATUS_STYLES: Record<string, string> = {
   locked: "bg-blue-50 text-blue-700",
 };
 
-export function BudgetWorkspacePage() {
+export function BudgetTabContent() {
   const { projectId } = useParams<{ projectId: string }>();
   const pid = Number(projectId);
 
@@ -137,15 +139,11 @@ export function BudgetWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-steel-200/60 shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-steel-900 flex items-center gap-3">
-            <div className="p-2 bg-orange-50 rounded-xl border border-orange-200/50">
-              <Wallet size={24} className="text-orange-500" />
-            </div>
-            Budget
-          </h1>
-          <div className="flex gap-2">
+      <CostControlHeader
+        title="Budget"
+        icon={Wallet}
+        actions={
+          <>
             <button
               onClick={() => setShowBlank(true)}
               className="flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-lg border border-steel-300 text-steel-700 hover:bg-steel-50 transition-colors"
@@ -160,9 +158,9 @@ export function BudgetWorkspacePage() {
               <Plus size={16} />
               Generate from BOQ
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {actionError && (
         <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg flex items-center gap-2">

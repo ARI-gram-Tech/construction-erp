@@ -166,25 +166,36 @@ class StockRestockRequestSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.CharField(
         source='reviewed_by.get_full_name', read_only=True, default=None
     )
+    generated_purchase_request_code = serializers.CharField(
+        source='generated_purchase_request.code', read_only=True, default=None
+    )
+    outstanding_quantity = serializers.SerializerMethodField()
 
     class Meta:
         model = StockRestockRequest
         fields = (
             'id', 'project', 'project_name', 'item', 'item_name', 'item_unit',
-            'quantity_requested', 'source_warehouse', 'source_warehouse_name',
+            'quantity_requested', 'fulfilled_quantity', 'outstanding_quantity',
+            'source_warehouse', 'source_warehouse_name',
             'notes', 'requested_by', 'requested_by_name', 'status',
             'dispatched_by', 'dispatched_by_name', 'dispatched_at', 'dispatch_notes',
             'resulting_movement',
             'received_by', 'received_by_name', 'received_at', 'receipt_movement',
             'reviewed_by', 'reviewed_by_name', 'reviewed_at', 'review_notes',
+            'generated_purchase_request', 'generated_purchase_request_code',
             'created_at',
         )
         read_only_fields = (
-            'id', 'project', 'requested_by', 'status',
+            'id', 'project', 'requested_by', 'status', 'fulfilled_quantity',
             'dispatched_by', 'dispatched_at', 'resulting_movement',
             'received_by', 'received_at', 'receipt_movement',
-            'reviewed_by', 'reviewed_at', 'review_notes', 'created_at',
+            'reviewed_by', 'reviewed_at', 'review_notes',
+            'generated_purchase_request', 'created_at',
         )
+
+    def get_outstanding_quantity(self, obj):
+        fulfilled = obj.fulfilled_quantity or 0
+        return obj.quantity_requested - fulfilled
 
 
 class ApproveRestockRequestSerializer(serializers.Serializer):

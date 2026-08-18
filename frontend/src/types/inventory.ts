@@ -146,6 +146,13 @@ export interface ApproveRequestPayload {
   reorder_level?: number;
 }
 
+export type RestockRequestStatus =
+  | "pending"
+  | "partially_dispatched"
+  | "in_transit"
+  | "received"
+  | "rejected";
+
 export interface StockRestockRequest {
   id: number;
   project: number;
@@ -154,12 +161,14 @@ export interface StockRestockRequest {
   item_name: string;
   item_unit: string;
   quantity_requested: number | string;
+  fulfilled_quantity: number | string | null;
+  outstanding_quantity: number | string;
   source_warehouse: number | null;
   source_warehouse_name: string | null;
   notes: string;
   requested_by: number | null;
   requested_by_name: string;
-  status: "pending" | "in_transit" | "received" | "rejected";
+  status: RestockRequestStatus;
   dispatched_by: number | null;
   dispatched_by_name: string | null;
   dispatched_at: string | null;
@@ -173,6 +182,8 @@ export interface StockRestockRequest {
   reviewed_by_name: string | null;
   reviewed_at: string | null;
   review_notes: string;
+  generated_purchase_request: number | null;
+  generated_purchase_request_code: string | null;
   created_at: string;
 }
 
@@ -193,4 +204,11 @@ export interface ApproveRestockRequestPayload {
 export interface ReceiveRestockRequestPayload {
   id: number;
   reference?: string;
+}
+
+export interface EscalateRestockPayload {
+  id: number;
+  quantity?: number;
+  title?: string;
+  reason?: string;
 }

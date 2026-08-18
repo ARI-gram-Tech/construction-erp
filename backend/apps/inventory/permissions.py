@@ -157,7 +157,7 @@ class StockRestockRequestPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        if view.action in ('approve', 'reject'):
+        if view.action in ('approve', 'reject', 'escalate_to_procurement'):
             return can_manage_warehouse_logistics(request.user)
         if view.action == 'receive':
             # The storekeeper of the RECEIVING project can confirm arrival

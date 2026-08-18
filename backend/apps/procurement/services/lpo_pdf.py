@@ -1,3 +1,4 @@
+# backend/apps/procurement/services/lpo_pdf.py
 """
 Renders an LPO to PDF using reportlab (Platypus). Called from
 LPOViewSet.pdf() and from _email_lpo_to_supplier() once digitally-

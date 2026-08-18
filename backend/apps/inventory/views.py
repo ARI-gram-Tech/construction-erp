@@ -817,10 +817,25 @@ class StockRestockRequestViewSet(
     def approve(self, request):
         """
         Body: { "id": <request id>, "source_warehouse"?: <id>, "reference"?: str }
-        DISPATCH only now — creates the transfer_out movement, decrements
-        source_warehouse, sets status='in_transit'. Does NOT touch the
-        destination store; that happens in receive() below, once the
-        storekeeper confirms it physically arrived.
+        DISPATCH — creates the transfer_out movement for WHATEVER quantity
+        is actually available (may be less than quantity_requested),
+        decrements source_warehouse, and sets status accordingly:
+
+          - Full stock available  -> status='in_transit', fulfilled_quantity
+            = quantity_requested.
+          - Partial stock available -> status='partially_dispatched',
+            fulfilled_quantity = what was actually sent. The shortfall
+            (quantity_requested - fulfilled_quantity) sits visible on the
+            request until Main Store Manager either escalates it to
+            Procurement (escalate_to_procurement()) or the request is
+            otherwise closed out.
+          - Zero stock available -> raises ValidationError; there's
+            nothing to dispatch, so this isn't a valid partial case —
+            Main Store Manager should escalate the full amount instead
+            of calling approve() at all.
+
+        Does NOT touch the destination store; that happens in receive()
+        below, once the storekeeper confirms what actually arrived.
         """
         request_id = request.data.get('id')
         if not request_id:
@@ -861,42 +876,141 @@ class StockRestockRequestViewSet(
             level, _ = StockLevel.objects.get_or_create(
                 warehouse=source_warehouse, item=restock_req.item, defaults={'quantity': Decimal('0')}
             )
-            if level.quantity < restock_req.quantity_requested:
+            if level.quantity <= 0:
                 raise ValidationError(
-                    f'Not enough stock at {source_warehouse.name}: {level.quantity} available.'
+                    f'No stock available at {source_warehouse.name} to dispatch. '
+                    'Escalate this request to Procurement instead.'
                 )
-            level.quantity -= restock_req.quantity_requested
+
+            dispatch_quantity = min(level.quantity, restock_req.quantity_requested)
+            is_partial = dispatch_quantity < restock_req.quantity_requested
+
+            level.quantity -= dispatch_quantity
             level.save()
 
             movement = StockMovement.objects.create(
                 company=company, movement_type='transfer_out',
                 item=restock_req.item, warehouse=source_warehouse,
-                quantity=restock_req.quantity_requested,
+                quantity=dispatch_quantity,
                 related_warehouse=None,  # set once receipt confirms the actual destination side
                 reference=reference, performed_by=request.user, notes=restock_req.notes,
             )
 
-            restock_req.status = 'in_transit'
+            restock_req.status = 'partially_dispatched' if is_partial else 'in_transit'
+            restock_req.fulfilled_quantity = dispatch_quantity
             restock_req.source_warehouse = source_warehouse
             restock_req.resulting_movement = movement
             restock_req.dispatched_by = request.user
             restock_req.dispatched_at = timezone.now()
             restock_req.dispatch_notes = reference
             restock_req.save(update_fields=[
-                'status', 'source_warehouse', 'resulting_movement',
+                'status', 'fulfilled_quantity', 'source_warehouse', 'resulting_movement',
                 'dispatched_by', 'dispatched_at', 'dispatch_notes',
             ])
 
             from apps.notifications.utils import notify
-            notify(
-                restock_req.requested_by, title='Your restock request is on its way',
-                message=f'{restock_req.quantity_requested} {restock_req.item.unit} of '
-                        f'{restock_req.item.name} has been dispatched to {restock_req.project.name}.',
-                level='info',
-                link=f'/projects/{restock_req.project_id}/inventory',
-            )
+            if is_partial:
+                shortfall = restock_req.quantity_requested - dispatch_quantity
+                notify(
+                    restock_req.requested_by, title='Your restock request is partially on its way',
+                    message=f'{dispatch_quantity} {restock_req.item.unit} of {restock_req.item.name} '
+                            f'dispatched to {restock_req.project.name}. '
+                            f'{shortfall} {restock_req.item.unit} still short — Procurement may be asked to source it.',
+                    level='warning',
+                    link=f'/projects/{restock_req.project_id}/inventory',
+                )
+            else:
+                notify(
+                    restock_req.requested_by, title='Your restock request is on its way',
+                    message=f'{dispatch_quantity} {restock_req.item.unit} of '
+                            f'{restock_req.item.name} has been dispatched to {restock_req.project.name}.',
+                    level='info',
+                    link=f'/projects/{restock_req.project_id}/inventory',
+                )
 
         return Response(StockRestockRequestSerializer(restock_req).data)
+
+    @action(detail=False, methods=['post'], url_path='escalate-to-procurement')
+    def escalate_to_procurement(self, request):
+        """
+        Body: { "id": <request id>, "quantity"?: <decimal>, "title"?: str, "reason"?: str }
+        Main Store Manager (or company-wide manager) only — pushes this
+        request's shortfall straight into a new draft PurchaseRequest,
+        carrying the item and quantity forward without retyping. Works
+        whether the request is still 'pending' (nothing dispatched yet,
+        full quantity_requested is the shortfall) or 'partially_dispatched'
+        (only the undelivered remainder is the shortfall).
+
+        `quantity` lets the Main Store Manager override the amount sent
+        to Procurement — e.g. site's need has since dropped, or they
+        want to round up to a standard order size. Defaults to the
+        actual outstanding shortfall if omitted.
+
+        Only one escalation per restock request — generated_purchase_request
+        being already set means this has already been done.
+        """
+        from apps.procurement.models import PurchaseRequest, PurchaseRequestItem
+
+        request_id = request.data.get('id')
+        if not request_id:
+            raise ValidationError('id is required.')
+
+        company = self.get_company()
+
+        with transaction.atomic():
+            try:
+                restock_req = StockRestockRequest.objects.select_for_update().get(
+                    pk=request_id, company=company,
+                    status__in=['pending', 'partially_dispatched'],
+                )
+            except StockRestockRequest.DoesNotExist:
+                raise ValidationError(
+                    'Request not found, or not in a state that can be escalated '
+                    '(must be pending or partially dispatched).'
+                )
+
+            if restock_req.generated_purchase_request_id:
+                raise ValidationError(
+                    f'This request was already escalated to '
+                    f'{restock_req.generated_purchase_request.code}.'
+                )
+
+            already_fulfilled = restock_req.fulfilled_quantity or Decimal('0')
+            outstanding = restock_req.quantity_requested - already_fulfilled
+
+            override = request.data.get('quantity')
+            if override is not None:
+                try:
+                    outstanding = Decimal(str(override))
+                except InvalidOperation:
+                    raise ValidationError('quantity must be a number.')
+
+            if outstanding <= 0:
+                raise ValidationError('Nothing outstanding to escalate on this request.')
+
+            pr = PurchaseRequest.objects.create(
+                project=restock_req.project,
+                requested_by=request.user,
+                title=request.data.get('title') or f'Restock shortfall — {restock_req.item.name}',
+                reason=request.data.get('reason', '')
+                    or f'Escalated from restock request #{restock_req.id} — '
+                       f'{restock_req.project.name} store shortfall.',
+                priority='normal',
+                status='draft',
+            )
+            PurchaseRequestItem.objects.create(
+                purchase_request=pr,
+                description=restock_req.item.name,
+                quantity=outstanding,
+                unit=restock_req.item.unit,
+                estimated_unit_cost=restock_req.item.standard_cost,
+                notes=f'From restock request #{restock_req.id}',
+            )
+
+            restock_req.generated_purchase_request = pr
+            restock_req.save(update_fields=['generated_purchase_request'])
+
+        return Response(StockRestockRequestSerializer(restock_req).data, status=201)
 
     @action(detail=False, methods=['post'])
     def receive(self, request):

@@ -18,6 +18,8 @@ import type {
   CreateRestockRequestPayload,
   ApproveRestockRequestPayload,
   ReceiveRestockRequestPayload,
+  EscalateRestockPayload,
+  RestockRequestStatus,
 } from "../types/inventory";
 
 // DRF paginates at 25/page. Every list function below must follow
@@ -201,7 +203,7 @@ export async function rejectStockItemRequests(
 // in the catalog yet."
 
 export async function listRestockRequests(
-  status?: "pending" | "in_transit" | "received" | "rejected",
+  status?: RestockRequestStatus,
 ): Promise<StockRestockRequest[]> {
   const qs = status ? `?status=${status}` : "";
   return fetchAllPages<StockRestockRequest>(
@@ -247,5 +249,18 @@ export async function rejectRestockRequests(
     ids,
     reason,
   });
+  return data;
+}
+
+// Pushes a restock request's outstanding shortfall into a new draft
+// PurchaseRequest in Procurement — Main Store Manager only, and only
+// once (generated_purchase_request being set means it's already done).
+export async function escalateRestockToProcurement(
+  payload: EscalateRestockPayload,
+): Promise<StockRestockRequest> {
+  const { data } = await api.post(
+    "/inventory/restock-requests/escalate-to-procurement/",
+    payload,
+  );
   return data;
 }

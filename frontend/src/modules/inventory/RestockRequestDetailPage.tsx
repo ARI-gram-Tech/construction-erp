@@ -1,10 +1,19 @@
 import { useParams, Link } from "react-router-dom";
 import { useFetch } from "@/hooks/useFetch";
 import { listRestockRequests } from "@/services/inventory";
-import { ArrowLeft, Truck, Clock, PackageCheck, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Truck,
+  Clock,
+  PackageCheck,
+  XCircle,
+  AlertTriangle,
+  ArrowUpRight,
+} from "lucide-react";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-50 text-amber-700 border-amber-200",
+  partially_dispatched: "bg-orange-50 text-orange-700 border-orange-200",
   in_transit: "bg-blue-50 text-blue-700 border-blue-200",
   received: "bg-green-50 text-green-700 border-green-200",
   rejected: "bg-red-50 text-red-700 border-red-200",
@@ -12,6 +21,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending Approval",
+  partially_dispatched: "Partially Dispatched",
   in_transit: "Dispatched — In Transit",
   received: "Received",
   rejected: "Rejected",
@@ -101,6 +111,36 @@ export function RestockRequestDetailPage() {
             )}
           </div>
         </div>
+
+        {req.status === "partially_dispatched" && (
+          <div className="p-5 flex items-start gap-3 bg-amber-50/40">
+            <AlertTriangle size={18} className="text-amber-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-steel-900">
+                Shortfall — {Number(req.outstanding_quantity)} {req.item_unit}{" "}
+                still needed
+              </p>
+              <p className="text-xs text-steel-500 mt-0.5">
+                {Number(req.fulfilled_quantity ?? 0)} of{" "}
+                {Number(req.quantity_requested)} {req.item_unit} was dispatched
+                from stock on hand.
+              </p>
+              {req.generated_purchase_request_code ? (
+                <p className="text-sm text-steel-700 mt-2 flex items-center gap-1">
+                  <ArrowUpRight size={14} className="text-steel-400" />
+                  Escalated to Procurement as{" "}
+                  <span className="font-medium">
+                    {req.generated_purchase_request_code}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs text-steel-400 mt-2">
+                  Not yet escalated to Procurement.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="p-5 flex items-start gap-3">
           <PackageCheck

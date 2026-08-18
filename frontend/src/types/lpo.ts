@@ -7,6 +7,7 @@ export type LPOStatus =
   | "fulfilled"
   | "cancelled";
 
+export type LPOOrigin = "generated" | "manual";
 export type SignatureMode = "wet_ink" | "digital" | "";
 export type DeliveryLocation = "site" | "main_warehouse" | "";
 
@@ -19,11 +20,21 @@ export interface LPOItem {
   amount: number | string;
 }
 
+export interface LPOItemInput {
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+}
+
 export interface LPO {
   id: number;
   code: string;
-  purchase_request: number;
-  purchase_request_code: string;
+  origin: LPOOrigin;
+  purchase_request: number | null;
+  purchase_request_code: string | null;
+  project: number;
+  project_name: string;
   supplier: number;
 
   company_name: string;
@@ -47,6 +58,8 @@ export interface LPO {
   signature_mode: SignatureMode;
   signed_document: string | null;
   signed_document_url: string | null;
+  source_document: string | null;
+  source_document_url: string | null;
   digitally_approved_by: number | null;
   digitally_approved_by_name: string | null;
   digitally_approved_at: string | null;
@@ -65,4 +78,23 @@ export interface GenerateLPOPayload {
   supplier: number;
   vat_applicable?: boolean;
   vat_percent?: number;
+}
+
+export interface ManualLPOPayload {
+  supplier: number;
+  project: number;
+  items: LPOItemInput[];
+  vat_applicable?: boolean;
+  vat_percent?: number;
+  purchase_request?: number;
+  source_document?: File | null;
+  already_signed?: boolean;
+}
+
+export interface SupplierItem {
+  id: number;
+  supplier: number;
+  description: string;
+  times_ordered: number;
+  last_ordered_at: string | null;
 }
